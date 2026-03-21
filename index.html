@@ -117,6 +117,12 @@
                 document.getElementById('overlay').style.display = 'none';
                 init();
                 animate();
+                // Mostrar el mensaje de zoom y ocultarlo después
+                const zh = document.getElementById('zoom-hint');
+                zh.style.opacity = '1';
+                setTimeout(() => {
+                    zh.style.opacity = '0';
+                }, 5000); // Se va a los 5 segundos
                 // Mostramos la música después de un ratico o al tocar
                 setTimeout(toggleMusic, 9000);
             }, 800);

@@ -66,6 +66,21 @@
             display: block;
             /* Asegura que respete el ancho y el centrado */
         }
+        
+        /* Mensaje flotante de instrucción */
+        #zoom-hint {
+            position: absolute;
+            bottom: 15%;
+            width: 100%;
+            text-align: center;
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 1rem;
+            z-index: 60;
+            opacity: 0;
+            transition: opacity 1.5s;
+            pointer-events: none; /* Para que no estorbe al tocar */
+        }
+        
     </style>
 </head>
 
@@ -83,7 +98,10 @@
             height="152" frameBorder="0" allowfullscreen=""
             allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"></iframe>
         <div class="close-music" onclick="toggleMusic()">Cerrar</div>
+        
     </div>
+    
+    <div id="zoom-hint">✨ Puedes hacer zoom con dos dedos ✨</div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>

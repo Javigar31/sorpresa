@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Sorpresa</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: #000;
+            font-family: -apple-system, sans-serif;
+        }
+
+        /* Capa inicial */
+        #overlay {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle at center, #220 0%, #000 100%);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            z-index: 100;
+            color: #ffde00;
+            text-align: center;
+            transition: opacity 0.8s;
+        }
+
+        /* Contenedor del Spotify - Oculto al inicio */
+        #music-container {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 90%;
+            max-width: 350px;
+            z-index: 50;
+            display: none;
+            /* Se activa al dar click al sol */
+            opacity: 0;
+            transition: opacity 1s;
+        }
+
+        .close-music {
+            color: #ffde00;
+            text-align: center;
+            cursor: pointer;
+            margin: 15px auto 0 auto;
+            /* Centrado horizontal con margen arriba */
+            font-weight: bold;
+            background-color: rgba(0, 0, 0, 0.7);
+            /* Fondo negro con 70% de opacidad */
+            width: 200px;
+            padding: 10px 5px;
+            /* Espacio interno para que no se vea apretado */
+            border: 1px solid #ffde00;
+            /* Un borde delgadito para que resalte más */
+            border-radius: 20px;
+            /* Bordes redondeados tipo iPhone */
+            backdrop-filter: blur(5px);
+            /* Efecto de desenfoque al fondo (muy elegante) */
+            display: block;
+            /* Asegura que respete el ancho y el centrado */
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="overlay" onclick="startApp()">
+        <h1>Perdón si no es un ramo hoy, pero lo hice con mucho cariño</h1>
+        <p style="color: white; opacity: 0.6; font-size: 0.9rem;">(Toca para abrirlo)</p>
+    </div>
+
+    <div id="music-container">
+
+        <iframe data-testid="embed-iframe" style="border-radius:12px"
+            src="https://open.spotify.com/embed/track/2JurHzCT0Qh9IeqzuhWqjg?utm_source=generator&theme=0" width="100%"
+            height="152" frameBorder="0" allowfullscreen=""
+            allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"></iframe>
+        <div class="close-music" onclick="toggleMusic()">Cerrar reproductor</div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+
+    <script>
+        let scene, camera, renderer, controls, sun;
+        const flowers = [];
+        const messages = ['Mi princesa', 'Cachetona hermosa', 'Mi ingeniera favorita', 'Mi patrona', 'Mi amor', 'Me encantas', 'JAMÁS', 'La que me domina'];
+
+        function startApp() {
+            document.getElementById('overlay').style.opacity = '0';
+            setTimeout(() => {
+                document.getElementById('overlay').style.display = 'none';
+                init();
+                animate();
+                // Mostramos la música después de un ratico o al tocar
+                setTimeout(toggleMusic, 9000);
+            }, 800);
+        }
+
+        function toggleMusic() {
+            const mc = document.getElementById('music-container');
+            if (mc.style.display === 'none' || mc.style.display === '') {
+                mc.style.display = 'block';
+                setTimeout(() => mc.style.opacity = '1', 10);
+            } else {
+                mc.style.opacity = '0';
+                setTimeout(() => mc.style.display = 'none', 1000);
+            }
+        }
+
+        function createTextTexture(text) {
+            const canvas = document.createElement('canvas');
+            canvas.width = 1024; canvas.height = 256;
+            const ctx = canvas.getContext('2d');
+            ctx.font = 'bold 70px sans-serif';
+            ctx.fillStyle = '#ffde00';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.shadowColor = '#ffaa00';
+            ctx.shadowBlur = 25;
+            ctx.fillText(text, canvas.width / 2, canvas.height / 2);
+            return new THREE.CanvasTexture(canvas);
+        }
+
+        function init() {
+            scene = new THREE.Scene();
+            camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 1, 5000);
+            camera.position.set(0, 400, 1100);
+
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            document.body.appendChild(renderer.domElement);
+
+            controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.autoRotate = true;
+            controls.autoRotateSpeed = 0.1;
+
+            // --- EL SOL ---
+            const sunSize = 150;
+            sun = new THREE.Mesh(new THREE.SphereGeometry(sunSize, 32, 32), new THREE.MeshBasicMaterial({ color: 0xfff000 }));
+            scene.add(sun);
+
+            // Resplandor del Sol
+            const sunGlowCanvas = document.createElement('canvas');
+            sunGlowCanvas.width = 256; sunGlowCanvas.height = 256;
+            const sCtx = sunGlowCanvas.getContext('2d');
+            const sGrad = sCtx.createRadialGradient(128, 128, 0, 128, 128, 128);
+            sGrad.addColorStop(0, 'rgba(255, 230, 0, 1)');
+            sGrad.addColorStop(0.5, 'rgba(255, 150, 0, 0.4)');
+            sGrad.addColorStop(1, 'rgba(255, 100, 0, 0)');
+            sCtx.fillStyle = sGrad;
+            sCtx.fillRect(0, 0, 256, 256);
+            const sunGlowSprite = new THREE.Sprite(new THREE.SpriteMaterial({
+                map: new THREE.CanvasTexture(sunGlowCanvas),
+                blending: THREE.AdditiveBlending,
+                transparent: true
+            }));
+            sunGlowSprite.scale.set(sunSize * 8, sunSize * 8, 1);
+            scene.add(sunGlowSprite);
+
+            // Flores
+            const fCanvas = document.createElement('canvas');
+            fCanvas.width = 128; fCanvas.height = 128;
+            const fCtx = fCanvas.getContext('2d');
+            fCtx.font = '80px serif'; fCtx.textAlign = 'center'; fCtx.textBaseline = 'middle';
+            fCtx.fillText('🌻', 64, 70);
+            const flowerTexture = new THREE.CanvasTexture(fCanvas);
+
+            for (let i = 0; i < 900; i++) {
+                const isMsg = Math.random() < 0.25;
+                const mat = new THREE.SpriteMaterial({
+                    map: isMsg ? createTextTexture(messages[Math.floor(Math.random() * messages.length)]) : flowerTexture,
+                    transparent: true, blending: THREE.AdditiveBlending
+                });
+                const sprite = new THREE.Sprite(mat);
+                const radius = THREE.MathUtils.randFloat(200, 900);
+                const angle = Math.random() * Math.PI * 2;
+                const speed = THREE.MathUtils.randFloat(0.0002, 0.001);
+                const yOff = THREE.MathUtils.randFloatSpread(300);
+                sprite.position.set(Math.cos(angle) * radius, yOff, Math.sin(angle) * radius);
+                sprite.scale.set(isMsg ? 160 : 25, isMsg ? 40 : 25, 1);
+                flowers.push({ mesh: sprite, radius, angle, speed, yOff });
+                scene.add(sprite);
+            }
+
+            // Estrellas
+            const starGeo = new THREE.BufferGeometry();
+            const starPos = [];
+            for (let i = 0; i < 3000; i++) {
+                starPos.push(THREE.MathUtils.randFloatSpread(3000), THREE.MathUtils.randFloatSpread(3000), THREE.MathUtils.randFloatSpread(3000));
+            }
+            starGeo.setAttribute('position', new THREE.Float32BufferAttribute(starPos, 3));
+            scene.add(new THREE.Points(starGeo, new THREE.PointsMaterial({ color: 0xffffff, size: 1.5 })));
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            const time = Date.now() * 0.00005;
+            flowers.forEach(f => {
+                f.angle += f.speed;
+                f.mesh.position.x = Math.cos(f.angle) * f.radius;
+                f.mesh.position.z = Math.sin(f.angle) * f.radius;
+                f.mesh.position.y = f.yOff + Math.sin(time + f.radius) * 25;
+            });
+            if (controls) controls.update();
+            renderer.render(scene, camera);
+        }
+
+        window.onresize = () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        };
+    </script>
+</body>
+
+</html>

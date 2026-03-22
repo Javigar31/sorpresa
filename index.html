@@ -33,7 +33,7 @@
         /* Contenedor del Spotify - Oculto al inicio */
         #music-container {
             position: absolute;
-            top: 50%;
+            top: 15%;
             left: 50%;
             transform: translate(-50%, -50%);
             width: 90%;
@@ -43,6 +43,30 @@
             /* Se activa al dar click al sol */
             opacity: 0;
             transition: opacity 1s;
+        }
+
+        #music-container.devil-mode {
+            transition: opacity 2.8s;
+        }
+
+        #surprise-button {
+            position: absolute;
+            left: 50%;
+            bottom: 8%;
+            transform: translateX(-50%);
+            z-index: 70;
+            display: none;
+            padding: 14px 24px;
+            border: 1px solid rgba(255, 255, 255, 0.35);
+            border-radius: 999px;
+            background: rgba(60, 0, 0, 0.78);
+            color: #fff;
+            font-size: 1rem;
+            font-weight: 700;
+            letter-spacing: 0.02em;
+            cursor: pointer;
+            backdrop-filter: blur(8px);
+            box-shadow: 0 12px 30px rgba(0, 0, 0, 0.35);
         }
 
         .close-music {
@@ -65,6 +89,11 @@
             /* Efecto de desenfoque al fondo (muy elegante) */
             display: block;
             /* Asegura que respete el ancho y el centrado */
+        }
+
+        #music-container.devil-mode .close-music {
+            color: #ff4d4d;
+            border-color: #ff4d4d;
         }
         
         /* Mensaje flotante de instrucción */
@@ -103,12 +132,15 @@
     
     <div id="zoom-hint">✨ Puedes hacer zoom con dos dedos ✨</div>
 
+    <button id="surprise-button" onclick="revealDiablito()">toca aquí y verás</button>
+
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
 
     <script>
-        let scene, camera, renderer, controls, sun;
+        let scene, camera, renderer, controls, sun, sunGlowSprite, musicAutoOpenTimeout;
         const flowers = [];
+        const devilMessages = ['Mamasita­', 'Hermosa', 'Deliciosa','Solo para mí', 'Me encantas', 'Sexo?', 'Más sexo?', 'Que rico usted, mi amor'];
         const messages = ['Mi princesa', 'Cachetona hermosa', 'Mi ingeniera favorita', 'Mi patrona', 'Mi amor', 'Me encantas', 'JAMÁS', 'La que me domina'];
 
         function startApp() {
@@ -124,7 +156,8 @@
                     zh.style.opacity = '0';
                 }, 5000); // Se va a los 5 segundos
                 // Mostramos la música después de un ratico o al tocar
-                setTimeout(toggleMusic, 9000);
+                document.getElementById('surprise-button').style.display = 'block';
+                musicAutoOpenTimeout = setTimeout(toggleMusic, 9000);
             }, 800);
         }
 
@@ -132,25 +165,95 @@
             const mc = document.getElementById('music-container');
             if (mc.style.display === 'none' || mc.style.display === '') {
                 mc.style.display = 'block';
-                setTimeout(() => mc.style.opacity = '1', 10);
+                const fadeDelay = mc.classList.contains('devil-mode') ? 700 : 10;
+                setTimeout(() => mc.style.opacity = '1', fadeDelay);
             } else {
                 mc.style.opacity = '0';
-                setTimeout(() => mc.style.display = 'none', 1000);
+                const hideDelay = mc.classList.contains('devil-mode') ? 2800 : 1000;
+                setTimeout(() => mc.style.display = 'none', hideDelay);
             }
         }
 
-        function createTextTexture(text) {
+        function createTextTexture(text, fillColor = '#ffde00', glowColor = '#ffaa00') {
             const canvas = document.createElement('canvas');
             canvas.width = 1024; canvas.height = 256;
             const ctx = canvas.getContext('2d');
             ctx.font = 'bold 70px sans-serif';
-            ctx.fillStyle = '#ffde00';
+            ctx.fillStyle = fillColor;
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
-            ctx.shadowColor = '#ffaa00';
+            ctx.shadowColor = glowColor;
             ctx.shadowBlur = 25;
             ctx.fillText(text, canvas.width / 2, canvas.height / 2);
             return new THREE.CanvasTexture(canvas);
+        }
+
+        function createEmojiTexture(emoji) {
+            const canvas = document.createElement('canvas');
+            canvas.width = 128;
+            canvas.height = 128;
+            const ctx = canvas.getContext('2d');
+            ctx.font = '80px serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(emoji, 64, 70);
+            return new THREE.CanvasTexture(canvas);
+        }
+
+        function updateIframeTrack() {
+            const iframe = document.querySelector('#music-container iframe');
+            iframe.src = 'https://open.spotify.com/embed/track/6xqbec9MHRmW7qtEINAlRx?utm_source=generator';
+        }
+
+        function revealDiablito() {
+            if (!sun) return;
+
+            if (musicAutoOpenTimeout) {
+                clearTimeout(musicAutoOpenTimeout);
+                musicAutoOpenTimeout = null;
+            }
+
+            sun.material.color.set(0xff2a2a);
+
+            if (sunGlowSprite) {
+                const glowCanvas = document.createElement('canvas');
+                glowCanvas.width = 256;
+                glowCanvas.height = 256;
+                const ctx = glowCanvas.getContext('2d');
+                const grad = ctx.createRadialGradient(128, 128, 0, 128, 128, 128);
+                grad.addColorStop(0, 'rgba(255, 70, 70, 1)');
+                grad.addColorStop(0.5, 'rgba(255, 0, 0, 0.45)');
+                grad.addColorStop(1, 'rgba(120, 0, 0, 0)');
+                ctx.fillStyle = grad;
+                ctx.fillRect(0, 0, 256, 256);
+                sunGlowSprite.material.map = new THREE.CanvasTexture(glowCanvas);
+                sunGlowSprite.material.needsUpdate = true;
+            }
+
+            const devilTexture = createEmojiTexture('😈');
+            flowers.forEach(f => {
+                if (f.isMessage) {
+                    const randomMessage = devilMessages[Math.floor(Math.random() * devilMessages.length)] || '';
+                    f.mesh.material.map = createTextTexture(randomMessage, '#ff4d4d', '#ff0000');
+                    f.mesh.material.needsUpdate = true;
+                    f.mesh.visible = true;
+                    f.mesh.scale.set(160, 40, 1);
+                    return;
+                }
+
+                f.mesh.material.map = devilTexture;
+                f.mesh.material.needsUpdate = true;
+                f.mesh.scale.set(28, 28, 1);
+            });
+
+            updateIframeTrack();
+            document.getElementById('surprise-button').style.display = 'none';
+
+            const mc = document.getElementById('music-container');
+            mc.classList.add('devil-mode');
+            if (mc.style.display === 'none' || mc.style.display === '') {
+                toggleMusic();
+            }
         }
 
         function init() {
@@ -183,7 +286,7 @@
             sGrad.addColorStop(1, 'rgba(255, 100, 0, 0)');
             sCtx.fillStyle = sGrad;
             sCtx.fillRect(0, 0, 256, 256);
-            const sunGlowSprite = new THREE.Sprite(new THREE.SpriteMaterial({
+            sunGlowSprite = new THREE.Sprite(new THREE.SpriteMaterial({
                 map: new THREE.CanvasTexture(sunGlowCanvas),
                 blending: THREE.AdditiveBlending,
                 transparent: true
@@ -212,7 +315,7 @@
                 const yOff = THREE.MathUtils.randFloatSpread(300);
                 sprite.position.set(Math.cos(angle) * radius, yOff, Math.sin(angle) * radius);
                 sprite.scale.set(isMsg ? 160 : 25, isMsg ? 40 : 25, 1);
-                flowers.push({ mesh: sprite, radius, angle, speed, yOff });
+                flowers.push({ mesh: sprite, radius, angle, speed, yOff, isMessage: isMsg });
                 scene.add(sprite);
             }
 

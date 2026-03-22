@@ -91,9 +91,21 @@
             /* Asegura que respete el ancho y el centrado */
         }
 
+        .close-hint {
+            margin: 14px 0 8px 0;
+            text-align: center;
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 0.8rem;
+            letter-spacing: 0.03em;
+        }
+
         #music-container.devil-mode .close-music {
             color: #ff4d4d;
             border-color: #ff4d4d;
+        }
+
+        #music-container.devil-mode .close-hint {
+            color: rgba(255, 90, 90, 0.78);
         }
         
         /* Mensaje flotante de instrucción */
@@ -126,6 +138,7 @@
             src="https://open.spotify.com/embed/track/2JurHzCT0Qh9IeqzuhWqjg?utm_source=generator&theme=0" width="100%"
             height="152" frameBorder="0" allowfullscreen=""
             allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"></iframe>
+        <div class="close-hint">Toca el boton blanco</div>
         <div class="close-music" onclick="toggleMusic()">Cerrar</div>
         
     </div>
@@ -138,10 +151,13 @@
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
 
     <script>
-        let scene, camera, renderer, controls, sun, sunGlowSprite, musicAutoOpenTimeout;
+        let scene, camera, renderer, controls, sun, sunGlowSprite, stars, musicAutoOpenTimeout;
         const flowers = [];
         const devilMessages = ['Mamasita­', 'Hermosa', 'Deliciosa','Solo para mí', 'Me encantas', 'Sexo?', 'Más sexo?', 'Que rico usted, mi amor'];
         const messages = ['Mi princesa', 'Cachetona hermosa', 'Mi ingeniera favorita', 'Mi patrona', 'Mi amor', 'Me encantas', 'JAMÁS', 'La que me domina'];
+
+        const isAppleWebKit = /WebKit/i.test(navigator.userAgent) && /(iPhone|iPad|iPod|Macintosh)/i.test(navigator.userAgent) && !/(CriOS|Chrome|EdgiOS|FxiOS)/i.test(navigator.userAgent);
+        const spriteBlendMode = isAppleWebKit ? THREE.NormalBlending : THREE.AdditiveBlending;
 
         function startApp() {
             document.getElementById('overlay').style.opacity = '0';
@@ -174,10 +190,20 @@
             }
         }
 
+        function createCanvasTexture(canvas) {
+            const texture = new THREE.CanvasTexture(canvas);
+            texture.minFilter = THREE.LinearFilter;
+            texture.magFilter = THREE.LinearFilter;
+            texture.generateMipmaps = false;
+            texture.needsUpdate = true;
+            return texture;
+        }
+
         function createTextTexture(text, fillColor = '#ffde00', glowColor = '#ffaa00') {
             const canvas = document.createElement('canvas');
             canvas.width = 1024; canvas.height = 256;
             const ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
             ctx.font = 'bold 70px sans-serif';
             ctx.fillStyle = fillColor;
             ctx.textAlign = 'center';
@@ -185,7 +211,7 @@
             ctx.shadowColor = glowColor;
             ctx.shadowBlur = 25;
             ctx.fillText(text, canvas.width / 2, canvas.height / 2);
-            return new THREE.CanvasTexture(canvas);
+            return createCanvasTexture(canvas);
         }
 
         function createEmojiTexture(emoji) {
@@ -193,11 +219,12 @@
             canvas.width = 128;
             canvas.height = 128;
             const ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
             ctx.font = '80px serif';
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
             ctx.fillText(emoji, 64, 70);
-            return new THREE.CanvasTexture(canvas);
+            return createCanvasTexture(canvas);
         }
 
         function updateIframeTrack() {
@@ -214,6 +241,10 @@
             }
 
             sun.material.color.set(0xff2a2a);
+            if (stars) {
+                stars.material.color.set(0xff4d4d);
+                stars.material.needsUpdate = true;
+            }
 
             if (sunGlowSprite) {
                 const glowCanvas = document.createElement('canvas');
@@ -226,7 +257,7 @@
                 grad.addColorStop(1, 'rgba(120, 0, 0, 0)');
                 ctx.fillStyle = grad;
                 ctx.fillRect(0, 0, 256, 256);
-                sunGlowSprite.material.map = new THREE.CanvasTexture(glowCanvas);
+                sunGlowSprite.material.map = createCanvasTexture(glowCanvas);
                 sunGlowSprite.material.needsUpdate = true;
             }
 
@@ -261,7 +292,7 @@
             camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 1, 5000);
             camera.position.set(0, 900, 2500);
 
-            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
             renderer.setSize(window.innerWidth, window.innerHeight);
             renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
             document.body.appendChild(renderer.domElement);
@@ -287,9 +318,10 @@
             sCtx.fillStyle = sGrad;
             sCtx.fillRect(0, 0, 256, 256);
             sunGlowSprite = new THREE.Sprite(new THREE.SpriteMaterial({
-                map: new THREE.CanvasTexture(sunGlowCanvas),
-                blending: THREE.AdditiveBlending,
-                transparent: true
+                map: createCanvasTexture(sunGlowCanvas),
+                blending: spriteBlendMode,
+                transparent: true,
+                depthWrite: false
             }));
             sunGlowSprite.scale.set(sunSize * 8, sunSize * 8, 1);
             scene.add(sunGlowSprite);
@@ -300,13 +332,15 @@
             const fCtx = fCanvas.getContext('2d');
             fCtx.font = '80px serif'; fCtx.textAlign = 'center'; fCtx.textBaseline = 'middle';
             fCtx.fillText('🌻', 64, 70);
-            const flowerTexture = new THREE.CanvasTexture(fCanvas);
+            const flowerTexture = createCanvasTexture(fCanvas);
 
             for (let i = 0; i < 900; i++) {
                 const isMsg = Math.random() < 0.25;
                 const mat = new THREE.SpriteMaterial({
                     map: isMsg ? createTextTexture(messages[Math.floor(Math.random() * messages.length)]) : flowerTexture,
-                    transparent: true, blending: THREE.AdditiveBlending
+                    transparent: true,
+                    blending: spriteBlendMode,
+                    depthWrite: false
                 });
                 const sprite = new THREE.Sprite(mat);
                 const radius = THREE.MathUtils.randFloat(200, 900);
@@ -322,11 +356,12 @@
             // Estrellas
             const starGeo = new THREE.BufferGeometry();
             const starPos = [];
-            for (let i = 0; i < 3000; i++) {
+            for (let i = 0; i < 7000; i++) {
                 starPos.push(THREE.MathUtils.randFloatSpread(3000), THREE.MathUtils.randFloatSpread(3000), THREE.MathUtils.randFloatSpread(3000));
             }
             starGeo.setAttribute('position', new THREE.Float32BufferAttribute(starPos, 3));
-            scene.add(new THREE.Points(starGeo, new THREE.PointsMaterial({ color: 0xffffff, size: 1.5 })));
+            stars = new THREE.Points(starGeo, new THREE.PointsMaterial({ color: 0xffffff, size: 1.5 }));
+            scene.add(stars);
         }
 
         function animate() {

@@ -108,7 +108,8 @@
         }
 
         #password-input {
-            width: 100%;
+            text-align: center;
+            width: 32%;
             box-sizing: border-box;
             padding: 12px 14px;
             border-radius: 12px;
@@ -234,7 +235,7 @@
             <h3>Clave secreta</h3>
             <p>Escribe cuánto vale X.</p>
             <p>3X - 203 = 4</p>
-            <input id="password-input" type="password" placeholder="Contraseña" onkeydown="handlePasswordKey(event)">
+            <input id="password-input" type="password" onkeydown="handlePasswordKey(event)">
             <div id="password-error"></div>
             <div class="password-actions">
                 <button class="password-cancel" onclick="closePasswordModal()" type="button">Cancelar</button>

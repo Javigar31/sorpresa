@@ -495,7 +495,7 @@
             // Estrellas
             const starGeo = new THREE.BufferGeometry();
             const starPos = [];
-            for (let i = 0; i < 7000; i++) {
+            for (let i = 0; i < 30000; i++) {
                 starPos.push(THREE.MathUtils.randFloatSpread(3000), THREE.MathUtils.randFloatSpread(3000), THREE.MathUtils.randFloatSpread(3000));
             }
             starGeo.setAttribute('position', new THREE.Float32BufferAttribute(starPos, 3));

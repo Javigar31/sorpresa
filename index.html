@@ -69,6 +69,88 @@
             box-shadow: 0 12px 30px rgba(0, 0, 0, 0.35);
         }
 
+        #password-modal {
+            position: absolute;
+            inset: 0;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 120;
+            background: rgba(0, 0, 0, 0.45);
+            backdrop-filter: blur(6px);
+        }
+
+        #password-modal.open {
+            display: flex;
+        }
+
+        .password-card {
+            width: min(86vw, 320px);
+            padding: 20px;
+            border-radius: 18px;
+            border: 1px solid rgba(255, 255, 255, 0.16);
+            background: rgba(20, 0, 0, 0.88);
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.35);
+            color: #fff;
+            text-align: center;
+        }
+
+        .password-card h3 {
+            margin: 0 0 8px 0;
+            font-size: 1rem;
+            color: #ffb3b3;
+        }
+
+        .password-card p {
+            margin: 0 0 14px 0;
+            font-size: 0.88rem;
+            color: rgba(255, 255, 255, 0.72);
+        }
+
+        #password-input {
+            width: 100%;
+            box-sizing: border-box;
+            padding: 12px 14px;
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.18);
+            background: rgba(255, 255, 255, 0.08);
+            color: #fff;
+            outline: none;
+        }
+
+        #password-error {
+            min-height: 18px;
+            margin: 10px 0 0 0;
+            color: #ff7d7d;
+            font-size: 0.8rem;
+        }
+
+        .password-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 14px;
+        }
+
+        .password-actions button {
+            flex: 1;
+            padding: 11px 12px;
+            border-radius: 999px;
+            border: 1px solid rgba(255, 255, 255, 0.18);
+            cursor: pointer;
+            font-weight: 700;
+        }
+
+        .password-cancel {
+            background: rgba(255, 255, 255, 0.08);
+            color: #fff;
+        }
+
+        .password-submit {
+            background: #8f1010;
+            color: #fff;
+            border-color: rgba(255, 80, 80, 0.45);
+        }
+
         .close-music {
             color: #ffde00;
             text-align: center;
@@ -145,7 +227,21 @@
     
     <div id="zoom-hint">✨ Puedes hacer zoom con dos dedos ✨</div>
 
-    <button id="surprise-button" onclick="revealDiablito()">toca aquí y verás</button>
+    <button id="surprise-button" onclick="openPasswordModal()">toca aquí y verás</button>
+
+    <div id="password-modal" onclick="handlePasswordBackdrop(event)">
+        <div class="password-card">
+            <h3>Clave secreta</h3>
+            <p>Escribe cuánto vale X para cambiar el sol.</p>
+            <p>3X - 203 = 4</p>
+            <input id="password-input" type="password" placeholder="Contraseña" onkeydown="handlePasswordKey(event)">
+            <div id="password-error"></div>
+            <div class="password-actions">
+                <button class="password-cancel" onclick="closePasswordModal()" type="button">Cancelar</button>
+                <button class="password-submit" onclick="submitPassword()" type="button">Entrar</button>
+            </div>
+        </div>
+    </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
@@ -156,6 +252,7 @@
         const devilMessages = ['Mamasita­', 'Hermosa', 'Deliciosa','Solo para mí', 'Me encantas', 'Sexo?', 'Más sexo?', 'Que rico usted, mi amor', 'Ñam', 'Grr'];
         const messages = ['Mi princesa', 'Cachetona hermosa', 'Mi ingeniera favorita', 'Mi patrona', 'Mi amor', 'Me encantas', 'JAMÁS', 'La que me domina'];
 
+        const devilPassword = '69';
         const isAppleWebKit = /WebKit/i.test(navigator.userAgent) && /(iPhone|iPad|iPod|Macintosh)/i.test(navigator.userAgent) && !/(CriOS|Chrome|EdgiOS|FxiOS)/i.test(navigator.userAgent);
         const spriteBlendMode = isAppleWebKit ? THREE.NormalBlending : THREE.AdditiveBlending;
 
@@ -188,6 +285,47 @@
                 const hideDelay = mc.classList.contains('devil-mode') ? 2800 : 1000;
                 setTimeout(() => mc.style.display = 'none', hideDelay);
             }
+        }
+
+        function openPasswordModal() {
+            const modal = document.getElementById('password-modal');
+            const input = document.getElementById('password-input');
+            const error = document.getElementById('password-error');
+            error.textContent = '';
+            input.value = '';
+            modal.classList.add('open');
+            setTimeout(() => input.focus(), 20);
+        }
+
+        function closePasswordModal() {
+            document.getElementById('password-modal').classList.remove('open');
+        }
+
+        function handlePasswordBackdrop(event) {
+            if (event.target.id === 'password-modal') {
+                closePasswordModal();
+            }
+        }
+
+        function handlePasswordKey(event) {
+            if (event.key === 'Enter') {
+                submitPassword();
+            }
+        }
+
+        function submitPassword() {
+            const input = document.getElementById('password-input');
+            const error = document.getElementById('password-error');
+
+            if (input.value === devilPassword) {
+                closePasswordModal();
+                revealDiablito();
+                return;
+            }
+
+            error.textContent = 'Contraseña incorrecta';
+            input.focus();
+            input.select();
         }
 
         function createCanvasTexture(canvas) {
